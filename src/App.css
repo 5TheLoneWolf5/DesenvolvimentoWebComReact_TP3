@@ -1,0 +1,11 @@
+* {
+  font-family: arial;
+}
+
+.container {
+  
+  width: fit-content;
+  margin: auto;
+  text-align: center;
+  
+}
