@@ -1,64 +1,89 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { insertPessoa, listPessoas, removePessoa } from "../crud";
+import { DataGrid } from "@mui/x-data-grid";
+
+const columns = [
+  { field: 'id', headerName: 'ID', width: 70 },
+  { field: 'nome', headerName: 'Nome', width: 130 },
+  { field: 'email', headerName: 'Email', width: 200 },
+  { field: 'telefone', headerName: 'Telefone', type: 'number', width: 200 },
+];
 
 const Exercise12 = () => {
+  const { register, handleSubmit, reset, getValues, setValue, formState : { errors } } = useForm();
+  const [formData, setFormData] = useState([]);
+  const [selectedData, setSelectedData] = useState("");
 
-  const [ufs, setUfs] = useState([]);
-  const [municipios, setMunicipios] = useState([]);
+  // useEffect(() => console.log(getValues()));
 
   useEffect(() => {
 
-    const fetchUfs = async () => {
+    // console.log(selectedData);
 
-      await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
-      .then((data) => data.json())
-      .then((data) => {
-
-        setUfs(data);
-
-      });
+    if (selectedData) {
       
-    };
+      setValue("nome", selectedData.nome);
+      setValue("email", selectedData.email);
+      setValue("telefone", selectedData.telefone);
 
-    fetchUfs();
-    
-  }, []);
-
-  const handleUf = async (e) => {
-
-    if (e.target.value) {
-
-      await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${e.target.value}/municipios`)
-      .then((data) => data.json())
-      .then((data) => {
-
-        setMunicipios(data);
-
-      });
-      
     }
-    
+
+  }, [selectedData]);
+
+  const onSubmit = async (data) => {
+    await insertPessoa(data);
+    await handleList();
+    reset();
   };
-  
+
+  const handleList = async () => {
+
+    const data = await listPessoas();
+    // console.log(Object.keys(data[0]));
+    setFormData(data);
+
+  };
+
+  const handleClick = async (data) => {
+
+    setSelectedData(data.row);
+    // console.log(data.row);
+
+  };
+
   return (
-    <div>
+    <div className="container">
       <h1>Exercise12</h1>
-      <div style={{ display: "flex", gap: "55px", alignItems: "center" }}>
-        <label>
-          UF: 
-          <select onChange={handleUf} defaultValue={"Default"}>
-            <option value="Default" disabled>Selecione...</option>
-            {ufs.map((uf, idx) => (
-              <option key={idx} value={uf.id}>{uf.nome}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Municípios: 
-          <select>
-            {municipios.map((municipio, idx) => <option key={idx}>{municipio.nome}</option>)}
-          </select>
-        </label>
-      </div>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <input {...register("nome", {
+          required: "Campo nome é obrigatório",
+        })} type="text" placeholder="Nome" />
+        <input {...register("email", {
+          required: "Campo email é obrigatório",
+          validate: {
+            matchPattern: (item) => /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(item) || "Email não é válido.",
+          }
+        })} placeholder="Email" />
+        <input {...register("telefone", {
+          required: "Campo telefone é obrigatório",
+          validate: {
+            matchPattern: (item) => (/^[0-9]*$/g).test(item) || "Telefone precisa ser número.",
+          }
+        })} type="text" placeholder="Telefone" />
+        <button type="submit">Registrar</button>
+        {errors?.nome && <p>{errors.nome.message}</p>}
+        {errors?.email && <p>{errors.email.message}</p>}
+        {errors?.telefone && <p>{errors.telefone.message}</p>}
+        <br/><br />
+        <button style={{ display: "block", margin: "5px auto" }} type="button" onClick={handleList}>Listar Usuários no Banco de Dados</button>
+        {formData.length > 0 && <DataGrid 
+          rows={formData}
+          columns={columns}
+          onRowClick={handleClick}
+          // checkboxSelection
+        />}
+      </form>
     </div>
   );
 };

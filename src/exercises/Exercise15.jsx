@@ -1,79 +1,44 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { logarUsuario } from "../auth";
 
 const Exercise15 = () => {
 
-  const [inputFilter, setInputFilter] = useState("");
-  const [ufs, setUfs] = useState([]);
+  const { register, handleSubmit, reset, getValues, setValue, formState : { errors } } = useForm();
+  const [message, setMessage] = useState("");
 
-  useEffect(() => {
+  const onSubmit = async (data) => {
 
-    const loadMunicipios = async (id) => {
+    await logarUsuario(data.email, data.password)
+    .then(() => {
+      setMessage("Usuário com email de " + data.email + " logado com sucesso.");
+      reset();
+    })
+    .catch((response) => setMessage(`Erro no login: ${response.message}`));
 
-      let result = null;
-
-      await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${id}/municipios`)
-      .then((data) => data.json())
-      .then((data) => {
-
-        result = data;
-        // The return needs to be done outside.
-
-      });
-
-      return result;
-
-    };
-
-    const fetchUfs = async () => {
-
-      let result = null;
-
-      await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
-      .then((data) => data.json())
-      .then((data) => {
-        result = data;
-      });
-
-      // The promise needs to be concluded in order to be rendered. So, putting the loop in here so it gets awaited (it needs to be at the top level).
-      for (let i = 0; i < result.length; i++) {
-
-        const municipiosUf = await loadMunicipios(result[i].id);
-        result[i] = { ...result[i], municipios: municipiosUf };
-
-        // loadMunicipios(data[i].id);
-      }
-
-      setUfs(result);
-
-    };
-
-    fetchUfs();
-
-  }, []);
-
-  const handleInputFilter = (e) => {
-    setInputFilter(e.target.value);
   };
 
   return (
-    <div>
+    <div className="container">
       <h1>Exercise15</h1>
-      <div style={{ display: "flex", gap: "25px", alignItems: "center" }}>
-        <input value={inputFilter} onChange={handleInputFilter} placeholder="Filtre os municípios." />
-        <label>Escolha:</label>
-          <select>
-            { ufs?.map((uf, i) => {
-                // console.log(uf.municipios);
-                return <optgroup key={i} label={uf.nome}>
-                  {uf?.municipios.map((municipio, j) => (
-                    municipio.nome.toLowerCase().includes(inputFilter.toLowerCase()) || !inputFilter ?
-                    <option key={j}>{municipio.nome}</option> : null
-                  ))}
-                </optgroup>
-              })
-            }
-          </select>
-      </div>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <input {...register("email", {
+          required: "Campo email é obrigatório",
+          validate: {
+            matchPattern: (item) => /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(item) || "Email não é válido.",
+          }
+        })} placeholder="Email" />
+        <input {...register("password", {
+          required: "Campo senha é obrigatório",
+        })} type="password" placeholder="Senha" />
+        <button type="submit">Logar</button>
+        <div style={{ color: "red" }}>
+          {errors?.email && <p>{errors.email.message}</p>}
+          {errors?.senha && <p>{errors.senha.message}</p>}
+        </div>
+        <p>{message}</p>
+        <br/>
+      </form>
     </div>
   );
 };

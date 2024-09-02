@@ -1,36 +1,39 @@
-import React, { useReducer } from "react";
+import { useEffect, useState } from "react";
 
 const Exercise02 = () => {
+  const [pessoa, setPessoa] = useState({ nome: "", telefone: 0 });
+  const [validations, setValidations] = useState("");
+  const [formData, setFormData] = useState({});
 
-  const reducerFunction = (state, action) => {
+  useEffect(() => console.log(pessoa));
 
-    switch (action.type) {
-      case "add": {
-        return {
-          ...state, 
-          idade: state.idade + 1 
-        };
-      }
-      case "remove": {
-        return {
-          ...state, 
-          idade: state.idade - 1 
-        };
-      }
-        // "break" is not needed;
-    };
-
+  const handleChange = (e) => {
+    setPessoa((prevData) => {
+      return { ...prevData, [e.target.name]: e.target.value, }
+    });
   };
 
-  const [pessoa, dispatcher] = useReducer(reducerFunction, { nome: "Adam", idade: 10 });
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (pessoa.nome === "" || pessoa.telefone === "") {
+      setValidations("Campo nome e telefone são obrigatórios.");
+    } else {
+      setValidations("");
+      setFormData(pessoa);
+    }
+  };
 
   return (
     <div className="container">
       <h1>Exercise02</h1>
-      <span>{pessoa?.idade}</span>
-      <br />
-      <button onClick={() => dispatcher( { type: "add" } )}>+</button>
-      <button onClick={() => dispatcher( { type: "remove" } )}>-</button>
+      <form onSubmit={handleSubmit}>
+        <input name="nome" type="text" value={pessoa.nome} onChange={handleChange} placeholder="Nome" required />
+        <input name="telefone" type="number" value={pessoa.telefone} onChange={handleChange} placeholder="Telefone" required />
+        <button type="submit">Enviar</button>
+        <p style={{ color: "red", }}>{validations}</p>
+        {Object.keys(formData).length > 0 && Object.keys(formData).map((item, idx) => <p key={idx}>{item}: {formData[item]}</p>)}
+      </form>
     </div>
   );
 };

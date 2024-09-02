@@ -1,48 +1,75 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 const Exercise16 = () => {
 
-  const [inputFilter, setInputFilter] = useState("");
-  const [nomes, setNomes] = useState([]);
+  const [inputCep, setInputCep] = useState("");
+  const [cep, setCep] = useState({});
+  const [error, setError] = useState("");
 
-  const handleSearch = async () => {
+  const validateCEP = () => {
 
-      let result = null;
-
-      await fetch(`https://servicodados.ibge.gov.br/api/v2/censos/nomes/ranking/?decada=${inputFilter}`)
-      .then((data) => data.json())
-      .then((data) => {
-
-        result = data[0].res;
-        // The return needs to be done outside.
-
-      })
-      .catch((error) => console.log("Erro: " + error.message));
-
-    setNomes(result);
-    // console.log(result);
+    if (!isNaN(inputCep) && inputCep.length === 8) {
+      return true;
+    }
+    
+    return false;
 
   };
 
-  const handleInputFilter = (e) => {
-    setInputFilter(e.target.value);
+  const handleSearch = async () => {
+
+    if (validateCEP()) {
+
+      let result = {};
+
+      await fetch(`https://viacep.com.br/ws/${inputCep}/json/`)
+        .then((response) => {
+
+          console.log(response);
+
+          if (response.status === 200) {
+            return response.json();
+          } else {
+            return setError("Requisição inválida.");
+          }
+        }
+        )
+        .then((data) => {
+          if (data?.erro) {
+            setError("CEP não encontrado.");
+          } else {
+            result = data;
+            setError("");
+          }
+        })
+        .catch((error) => setError(`Erro: ${error.message}`));
+
+    setCep(result);
+
+    } else {
+
+      setError("Este CEP não é válido!");
+
+    }
+
+  };
+
+  const handleInputCep = (e) => {
+    setInputCep(e.target.value);
   };
 
   return (
     <div>
       <h1>Exercise16</h1>
-      <div style={{ display: "flex", gap: "25px", alignItems: "center" }}>
-        <span>Digite um ano terminado em ZERO (década) para obter o ranking de frequência de nomes de brasileiros:</span>
-        <input value={inputFilter} onChange={handleInputFilter} placeholder="Digite aqui." />
-        <button onClick={handleSearch}>Pesquise Aqui</button>
-      </div>
+      <input value={inputCep} onChange={handleInputCep} placeholder="Digite o CEP aqui."/>
+      <button onClick={handleSearch}>Buscar CEP</button>
       <div style={{ textAlign: "center" }}>
-        {nomes.map((item, idx) => <div key={idx}>
-          {item.ranking}º<br />
-          <strong>Nome: </strong>{item.nome}<br />
-          <strong>Frequência: </strong>{item.frequencia}<br />
-          <hr />
-        </div>)}
+        { error ? <p style={{ color: "red" }}>{error}</p> : Object.entries(cep).map((item, idx) => (
+          <div key={idx}>
+            <strong>{item[0].charAt(0).toUpperCase() + item[0].slice(1)}:</strong> {item[1]}<br /><br />
+          </div>
+          )) 
+        }
       </div>
     </div>
   );
